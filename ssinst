@@ -1,0 +1,55 @@
+#!/bin/bash
+# Author: Pintér Gábor
+# Website: xpg.hu
+# E-mail: info@xpg.hu
+# Release date: 2018.02.26
+
+# --- Set SSH Server port ---
+
+if [ $# -eq 0 ]; then
+	read -p 'SSH port (default 22):' pn
+elif [ $# -lt 2 ]; then
+	if [ "$1" -lt 0 ] || [ "$1" -gt 99999 ]; then
+	    echo 'Not allowed!'
+    else 
+		pn=$1
+	fi
+else
+	echo 'Too much parameter!'
+fi
+
+# --- Install SSH package ---
+
+yes | sudo pacman -Sy openssh
+
+# --- Create sshd config ---
+
+sudo cat << EOF > /etc/ssh/sshd_config
+Port $pn
+Protocol 2
+PermitRootLogin no
+LoginGraceTime 30
+MaxAuthTries 3
+PubkeyAuthentication yes
+AuthorizedKeysFile	.ssh/authorized_keys
+PermitEmptyPasswords no
+UsePAM yes
+ClientAliveInterval 300
+ClientAliveCountMax 0
+EOF
+
+# --- Restart sshd --- 
+
+sudo systemctl restart sshd
+
+# --- After install ---
+
+echo 'SSH Server installation done, try connect from client:'
+echo "ssh user@serverip_or_hostname -p $pn"
+echo 'if you use key file for authentication, generate a key on client and copy to the server:'
+echo 'ssh-keygen -t rsa -b 4096'
+echo "ssh-copy-id user@serverip_or_hostname -p $pn"
+echo 'Turn off password authentication on the server and restart the service:'
+echo '/etc/ssh/sshd_config'
+echo 'PasswordAuthentication no'
+echo 'sudo systemctl restart sshd'
